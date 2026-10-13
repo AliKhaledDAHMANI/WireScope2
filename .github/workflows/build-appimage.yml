@@ -71,7 +71,7 @@ jobs:
           test -s THIRD_PARTY_NODE_LICENSES.json
 
       - name: Build Linux AppImage
-        run: npm run dist -- --linux AppImage
+        run: npm run dist -- --linux AppImage --publish never
 
       - name: Verify AppImage output
         shell: bash
