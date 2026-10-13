@@ -1,0 +1,73 @@
+name: Test and package desktop installers
+on:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test-and-build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            python: '3.12'
+          - os: ubuntu-24.04
+            python: '3.12'
+          - os: macos-14
+            python: '3.12'
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Python dependencies
+        run: python -m pip install -e '.[dev,package]'
+      - name: Run tests (local unit tests and HTTP/HTTPS proxy integration tests)
+        run: python -m pytest -q
+      - name: Check desktop-shell and renderer syntax
+        run: |
+          node --check electron/main.cjs
+          node --check src/wirescope/static/app.js
+      - name: Build standalone local backend
+        run: python -m PyInstaller --clean --noconfirm wirescope-backend.spec
+      - name: Stage backend for Electron Builder
+        run: python scripts/stage_backend.py
+      - name: Install pinned desktop-shell dependencies
+        run: npm install
+      - name: Generate third-party license inventories
+        run: |
+          python scripts/generate_licenses.py --output THIRD_PARTY_PYTHON_LICENSES.json
+          node scripts/generate_node_licenses.cjs --output THIRD_PARTY_NODE_LICENSES.json
+      - name: Build native desktop installers
+        shell: bash
+        run: |
+          # The dedicated build-appimage.yml workflow owns AppImage builds for
+          # main/master pushes and manual runs. Keep branch/PR CI focused on the
+          # Linux DEB to avoid building the same AppImage twice. Version tags
+          # still build both Linux targets for the existing release upload.
+          if [[ "${RUNNER_OS}" == "Linux" && "${GITHUB_REF}" != refs/tags/v* ]]; then
+            npm run dist -- --linux deb
+          else
+            npm run dist
+          fi
+      - name: Upload desktop installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: WireScope-${{ runner.os }}-installers
+          path: release/*
+          if-no-files-found: error
+      - name: Upload release assets on version tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

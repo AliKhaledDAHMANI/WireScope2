@@ -1,0 +1,102 @@
+name: Build Linux AppImage
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-appimage-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-appimage:
+    name: Build WireScope Linux AppImage
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Linux packaging dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            build-essential \
+            libasound2t64 \
+            libfuse2t64 \
+            libgtk-3-0 \
+            libnss3
+
+      - name: Install Python build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev,package]'
+
+      - name: Validate PyInstaller data and binary entries
+        run: python scripts/validate_pyinstaller_spec.py
+
+      - name: Build standalone backend
+        run: python -m PyInstaller --clean --noconfirm wirescope-backend.spec
+
+      - name: Stage backend for Electron Builder
+        run: python scripts/stage_backend.py
+
+      - name: Install pinned desktop-shell dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Generate third-party license inventories
+        run: |
+          python scripts/generate_licenses.py --output THIRD_PARTY_PYTHON_LICENSES.json
+          node scripts/generate_node_licenses.cjs --output THIRD_PARTY_NODE_LICENSES.json
+          test -s THIRD_PARTY_PYTHON_LICENSES.json
+          test -s THIRD_PARTY_NODE_LICENSES.json
+
+      - name: Build Linux AppImage
+        run: npm run dist -- --linux AppImage
+
+      - name: Verify AppImage output
+        shell: bash
+        run: |
+          shopt -s nullglob
+          appimages=(release/*.AppImage)
+          if (( ${#appimages[@]} == 0 )); then
+            echo '::error::Electron Builder completed without producing release/*.AppImage.'
+            echo 'Check the packaging logs and the linux.target configuration in package.json.'
+            exit 1
+          fi
+
+          for appimage in "${appimages[@]}"; do
+            if [[ ! -s "$appimage" ]]; then
+              echo "::error::AppImage output is empty: $appimage"
+              exit 1
+            fi
+            chmod +x "$appimage"
+            ls -lh "$appimage"
+          done
+
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WireScope-Linux-AppImage
+          path: release/*.AppImage
+          if-no-files-found: error
+          retention-days: 14

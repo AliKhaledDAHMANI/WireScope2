@@ -1,0 +1,78 @@
+{
+  "name": "wirescope-desktop",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Local-first desktop HTTP/HTTPS inspection and replay workbench",
+  "license": "Apache-2.0",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "licenses:python": "python scripts/generate_licenses.py --output THIRD_PARTY_PYTHON_LICENSES.json",
+    "licenses:node": "node scripts/generate_node_licenses.cjs --output THIRD_PARTY_NODE_LICENSES.json"
+  },
+  "devDependencies": {
+    "electron": "44.7.0",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "org.wirescope.app",
+    "productName": "WireScope",
+    "asar": true,
+    "files": [
+      "electron/**",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "dist-backend",
+        "to": "bin",
+        "filter": [
+          "wirescope-backend",
+          "wirescope-backend.exe"
+        ]
+      },
+      {
+        "from": "LICENSE",
+        "to": "licenses/WireScope-LICENSE"
+      },
+      {
+        "from": "DEPENDENCIES.md",
+        "to": "licenses/DEPENDENCIES.md"
+      },
+      {
+        "from": "THIRD_PARTY_PYTHON_LICENSES.json",
+        "to": "licenses/THIRD_PARTY_PYTHON_LICENSES.json"
+      },
+      {
+        "from": "THIRD_PARTY_NODE_LICENSES.json",
+        "to": "licenses/THIRD_PARTY_NODE_LICENSES.json"
+      }
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "artifactName": "WireScope-${version}-windows-${arch}.${ext}"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Development",
+      "artifactName": "WireScope-${version}-linux-${arch}.${ext}"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.developer-tools",
+      "artifactName": "WireScope-${version}-mac-${arch}.${ext}"
+    }
+  }
+}

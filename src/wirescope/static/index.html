@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>WireScope</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M7 13.5h8.5L20 26.5l4.5-13h8.5M7 26.5h7.5M25.5 26.5H33"/><circle cx="7" cy="13.5" r="2"/><circle cx="33" cy="13.5" r="2"/><circle cx="20" cy="26.5" r="2"/></svg></div>
+        <div class="brand-copy"><strong>WireScope</strong><span>LOCAL SECURITY WORKBENCH</span></div>
+      </div>
+      <div class="nav-caption">WORKSPACES</div>
+      <nav class="primary-nav" aria-label="Workspaces">
+        <button class="nav-item active" data-view="proxy"><span class="nav-icon">⇄</span><span>Proxy</span><kbd>1</kbd></button>
+        <button class="nav-item" data-view="history"><span class="nav-icon">≋</span><span>HTTP History</span><kbd>2</kbd></button>
+        <button class="nav-item" data-view="repeater"><span class="nav-icon">↻</span><span>Repeater</span><kbd>3</kbd></button>
+        <button class="nav-item" data-view="sitemap"><span class="nav-icon">⌘</span><span>Site Map</span></button>
+        <button class="nav-item" data-view="findings"><span class="nav-icon">◇</span><span>Findings</span></button>
+        <button class="nav-item" data-view="decoder"><span class="nav-icon">⇄</span><span>Decoder</span></button>
+        <button class="nav-item" data-view="comparer"><span class="nav-icon">⇆</span><span>Comparer</span></button>
+        <button class="nav-item" data-view="websockets"><span class="nav-icon">↔</span><span>WebSockets</span></button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="local-card"><span class="local-dot"></span><div><strong>Local by design</strong><small>No cloud · No telemetry</small></div></div>
+        <button class="nav-item" data-view="settings"><span class="nav-icon">⚙</span><span>Settings & scope</span></button>
+        <div class="sidebar-footer"><span>WIRESCOPE</span><span>v0.3.0 · MILESTONE 3</span></div>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <div class="breadcrumbs"><span>WireScope</span><span class="crumb-separator">/</span><strong id="current-crumb">Proxy</strong></div>
+        <div class="topbar-actions">
+          <span id="connection-pill" class="status-pill stopped"><span class="status-dot"></span><span id="connection-label">Proxy stopped</span></span>
+          <button id="global-proxy-action" class="button button-primary button-sm">Start proxy</button>
+        </div>
+      </header>
+
+      <section id="view-proxy" class="workspace-view active">
+        <div class="page-heading">
+          <div><div class="eyebrow">TRAFFIC INTERCEPTION</div><h1>Proxy</h1><p>Inspect live HTTP and HTTPS traffic passing through your local listener.</p></div>
+          <div class="heading-meta"><span class="meta-label">LISTENER</span><code id="listener-summary">127.0.0.1:8080</code></div>
+        </div>
+        <div class="proxy-overview panel">
+          <div class="proxy-overview-main"><div class="proxy-symbol">⇄</div><div><div class="inline-title"><h2>Intercepting proxy</h2><span id="proxy-state-badge" class="state-badge state-off">OFFLINE</span></div><p id="proxy-description">Start the local listener to capture traffic from a configured browser or test client.</p><div class="proxy-endpoint"><span class="endpoint-dot"></span><code id="proxy-endpoint">http://127.0.0.1:8080</code><button class="icon-button" id="copy-endpoint" title="Copy proxy address" aria-label="Copy proxy address">⧉</button></div></div></div>
+          <div class="proxy-overview-actions"><button id="proxy-main-action" class="button button-primary">Start listener</button><button id="ca-download" class="button button-secondary" disabled>Export CA certificate</button></div>
+          <div class="overview-divider"></div>
+          <div class="metric"><span>CAPTURED REQUESTS</span><strong id="metric-captured">0</strong></div>
+          <div class="metric"><span>WAITING FOR ACTION</span><strong id="metric-pending">0</strong></div>
+          <div class="metric"><span>CA CERTIFICATE</span><strong id="metric-ca">Not created</strong></div>
+        </div>
+
+        <div class="section-header"><div><h2>Interception queue</h2><p>Requests pause here while interception is enabled.</p></div><label class="toggle-row"><span>Intercept requests</span><input id="intercept-toggle" type="checkbox" disabled><span class="toggle"></span></label></div>
+        <div class="panel queue-panel">
+          <div id="pending-empty" class="empty-state"><div class="empty-icon">⇄</div><strong>No requests waiting</strong><span>Enable interception, then send traffic through 127.0.0.1:8080.</span></div>
+          <div id="pending-content" class="pending-content hidden">
+            <div class="pending-list"><div class="subpanel-heading"><span>PAUSED REQUESTS</span><span id="pending-count-label" class="count-label">0</span></div><div id="pending-list-rows"></div></div>
+            <div class="pending-editor"><div class="subpanel-heading"><span>REQUEST EDITOR</span><span class="editor-hint">Raw HTTP · UTF-8</span></div><textarea id="pending-request-editor" class="code-editor" spellcheck="false" aria-label="Paused request editor"></textarea><div class="editor-actions"><span id="pending-editor-note" class="muted-note">Select a paused request to edit it.</span><div><button id="drop-pending" class="button button-danger button-sm" disabled>Drop</button><button id="forward-pending" class="button button-primary button-sm" disabled>Forward</button></div></div></div>
+          </div>
+        </div>
+        <div class="notice-row"><span class="notice-icon">i</span><span>HTTPS decryption starts after you explicitly trust the exported WireScope CA certificate in your test browser. The certificate is not installed automatically.</span><button data-view="settings" class="text-button">Scope & safety →</button></div>
+      </section>
+
+      <section id="view-history" class="workspace-view">
+        <div class="page-heading"><div><div class="eyebrow">CAPTURED TRAFFIC</div><h1>HTTP History</h1><p>Search captured requests and inspect raw request and response data.</p></div><div class="heading-meta"><span class="meta-label">LOCAL DATABASE</span><code>SQLite · on this device</code></div></div>
+        <div class="history-toolbar panel"><label class="search-field"><span>⌕</span><input id="history-search" type="search" placeholder="Filter by host, URL, method, or status…" autocomplete="off"><kbd>Ctrl K</kbd></label><span id="history-result-count" class="muted-note">0 requests</span><button id="history-refresh" class="button button-secondary button-sm">Refresh</button></div>
+        <div class="history-layout">
+          <div class="panel history-table-panel"><div class="table-heading"><span>METHOD</span><span>HOST / PATH</span><span>STATUS</span><span>TIME</span></div><div id="history-rows" class="history-rows"><div class="empty-state compact"><strong>No captured traffic yet</strong><span>Start the proxy and route a local test client through it.</span></div></div></div>
+          <div class="panel detail-panel"><div id="history-detail-empty" class="empty-state detail-empty"><div class="empty-icon">≋</div><strong>Select a request</strong><span>Request and response details appear here.</span></div><div id="history-detail" class="hidden"></div></div>
+        </div>
+      </section>
+
+      <section id="view-sitemap" class="workspace-view">
+        <div class="page-heading"><div><div class="eyebrow">OBSERVED ENDPOINTS</div><h1>Site Map</h1><p>Endpoints are derived only from saved proxy traffic. WireScope does not crawl or probe hosts to populate this view.</p></div><div class="heading-meta"><span class="meta-label">DATA SOURCE</span><code>SQLite · captured traffic</code></div></div>
+        <div class="panel tool-toolbar sitemap-filters">
+          <label class="search-field"><span>⌕</span><input id="sitemap-search" type="search" placeholder="Search host, path, method, parameter…" autocomplete="off"></label>
+          <input id="sitemap-host" class="filter-input" type="search" placeholder="Host contains…" aria-label="Filter by host">
+          <select id="sitemap-method" class="filter-select" aria-label="Filter by method"><option value="">All methods</option><option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option><option>OPTIONS</option><option>HEAD</option></select>
+          <select id="sitemap-type" class="filter-select" aria-label="Filter by content type"><option value="">All content types</option><option value="text/html">HTML</option><option value="application/json">JSON</option><option value="text/plain">Text</option><option value="text/css">CSS</option><option value="javascript">JavaScript</option><option value="image/">Images</option></select>
+          <select id="sitemap-status" class="filter-select" aria-label="Filter by status"><option value="">All statuses</option><option value="2xx">2xx</option><option value="3xx">3xx</option><option value="4xx">4xx</option><option value="5xx">5xx</option></select>
+          <select id="sitemap-scope" class="filter-select" aria-label="Scope filter"><option value="all">All scope</option><option value="in_scope">In scope</option><option value="out_of_scope">Out of scope</option></select>
+          <button id="sitemap-refresh" class="button button-secondary button-sm">Refresh</button>
+        </div>
+        <div class="sitemap-layout"><div class="panel sitemap-list-panel"><div class="sitemap-tree-heading"><span>OBSERVED HOSTS / PATHS</span><span>STATUS · REQUESTS · SCOPE</span></div><div id="sitemap-rows" class="sitemap-rows" aria-label="Observed endpoint tree"><div class="empty-state compact"><strong>Loading captured endpoints…</strong></div></div></div>
+          <div class="panel sitemap-detail-panel"><div id="sitemap-detail-empty" class="empty-state detail-empty"><div class="empty-icon">⌘</div><strong>Select an endpoint</strong><span>Inspect captured methods, content types, parameters, and related history.</span></div><div id="sitemap-detail" class="hidden"></div></div></div>
+      </section>
+
+      <section id="view-findings" class="workspace-view">
+        <div class="page-heading"><div><div class="eyebrow">PASSIVE SECURITY ANALYSIS</div><h1>Findings</h1><p>Rule-based analysis of saved responses only. Findings are indicators to review, not automatic proof of a vulnerability.</p></div><div class="heading-meta"><span class="meta-label">NETWORK ACTIVITY</span><code>None · passive only</code></div></div>
+        <div class="panel tool-toolbar"><label class="search-field"><span>⌕</span><input id="findings-search" type="search" placeholder="Search title, URL, evidence…" autocomplete="off"></label><select id="findings-severity" class="filter-select" aria-label="Severity"><option value="">All severities</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option><option value="info">Informational</option></select><select id="findings-status" class="filter-select" aria-label="Finding status"><option value="">All statuses</option><option value="open">Open</option><option value="false_positive">False positive</option><option value="resolved">Resolved</option></select><button id="findings-reanalyze" class="button button-secondary button-sm">Analyze saved history</button><button id="findings-refresh" class="button button-secondary button-sm">Refresh</button><span id="findings-count" class="muted-note">0 findings</span></div>
+        <div class="findings-layout"><div id="findings-rows" class="panel findings-rows"><div class="empty-state compact"><strong>No findings yet</strong><span>Captured responses are analyzed in the background after the proxy receives them.</span></div></div><div class="panel finding-detail-panel"><div id="finding-detail-empty" class="empty-state detail-empty"><div class="empty-icon">◇</div><strong>Select a finding</strong><span>Evidence, confidence, explanation, remediation and source capture appear here.</span></div><div id="finding-detail" class="hidden"></div></div></div>
+      </section>
+
+      <section id="view-decoder" class="workspace-view">
+        <div class="page-heading"><div><div class="eyebrow">LOCAL TRANSFORMATIONS</div><h1>Decoder & Encoder</h1><p>Transform UTF-8 text locally. Invalid or binary output is reported explicitly rather than silently replaced.</p></div><div class="heading-meta"><span class="meta-label">PROCESSING</span><code>Local API · no network targets</code></div></div>
+        <div class="panel decoder-panel"><div class="decoder-toolbar"><label class="control-label" for="decoder-operation">Operation<select id="decoder-operation" class="filter-select"><option value="url_encode">URL encode</option><option value="url_decode">URL decode</option><option value="base64_encode">Base64 encode</option><option value="base64_decode">Base64 decode</option><option value="hex_encode">Hex encode</option><option value="hex_decode">Hex decode</option><option value="html_encode">HTML entity encode</option><option value="html_decode">HTML entity decode</option></select></label><div class="decoder-actions"><button id="decoder-transform" class="button button-primary">Transform</button><button id="decoder-swap" class="button button-secondary">Swap</button><button id="decoder-clear" class="button button-secondary">Clear</button><button id="decoder-copy" class="button button-secondary">Copy output</button></div></div><div class="decoder-columns"><label class="editor-label">Input<textarea id="decoder-input" class="code-editor tool-editor" spellcheck="false" placeholder="Paste text to encode or decode…"></textarea><span id="decoder-input-meta" class="muted-note">0 bytes</span></label><label class="editor-label">Output<textarea id="decoder-output" class="code-editor tool-editor" spellcheck="false" readonly placeholder="Transformed output appears here…"></textarea><span id="decoder-output-meta" class="muted-note">No output yet</span></label></div><p id="decoder-message" class="tool-message" role="status">UTF-8 text input · maximum 2 MiB.</p></div>
+      </section>
+
+      <section id="view-comparer" class="workspace-view">
+        <div class="page-heading"><div><div class="eyebrow">LOCAL DIFFERENCE ANALYSIS</div><h1>Comparer</h1><p>Compare pasted text or captured HTTP messages without sending requests.</p></div><div class="heading-meta"><span class="meta-label">PROCESSING</span><code>Local diff · no network requests</code></div></div>
+        <div class="panel comparer-controls"><label class="control-label" for="compare-mode">Compare mode<select id="compare-mode" class="filter-select"><option value="text">Plain text</option><option value="request">HTTP request</option><option value="response">HTTP response</option><option value="headers">Headers only</option><option value="bodies">Bodies only</option></select></label><button id="compare-run" class="button button-primary">Compare</button><span id="compare-summary" class="muted-note">Paste two inputs or load a capture from history.</span></div>
+        <div class="compare-source-row"><div class="panel compare-source"><div class="subpanel-heading">LEFT INPUT · SOURCE FROM HISTORY</div><div class="compare-source-controls"><select id="compare-left-flow" class="filter-select" aria-label="Left captured flow"><option value="">Choose captured request…</option></select><select id="compare-left-kind" class="filter-select" aria-label="Left request or response"><option value="request">Request</option><option value="response">Response</option></select><button id="compare-left-load" class="button button-secondary button-sm">Load</button></div><textarea id="compare-left" class="code-editor compare-editor" spellcheck="false" aria-label="Left comparison input" placeholder="Paste the first request, response, or text…"></textarea></div>
+        <div class="panel compare-source"><div class="subpanel-heading">RIGHT INPUT · SOURCE FROM HISTORY</div><div class="compare-source-controls"><select id="compare-right-flow" class="filter-select" aria-label="Right captured flow"><option value="">Choose captured request…</option></select><select id="compare-right-kind" class="filter-select" aria-label="Right request or response"><option value="request">Request</option><option value="response">Response</option></select><button id="compare-right-load" class="button button-secondary button-sm">Load</button></div><textarea id="compare-right" class="code-editor compare-editor" spellcheck="false" aria-label="Right comparison input" placeholder="Paste the second request, response, or text…"></textarea></div></div>
+        <div class="panel compare-result-panel"><div class="panel-titlebar"><div><h2>Differences</h2><span class="subtle">Modified lines are paired; removed and added lines are shown separately.</span></div><button id="compare-copy-diff" class="button button-secondary button-sm" disabled>Copy unified diff</button></div><div id="compare-result" class="compare-result"><div class="empty-state compact"><strong>Nothing compared yet</strong><span>Run Compare to show a line-by-line diff.</span></div></div></div>
+      </section>
+
+      <section id="view-repeater" class="workspace-view">
+        <div class="page-heading"><div><div class="eyebrow">MANUAL REQUEST REPLAY</div><h1>Repeater</h1><p>Edit a request, send it to an in-scope target, and inspect the response.</p></div><div class="heading-meta"><span class="meta-label">SAFETY</span><code>Scope-gated · TLS verified</code></div></div>
+        <div class="repeater-layout">
+          <div class="panel repeater-request-panel"><div class="panel-titlebar"><div><h2>Request</h2><span class="subtle">Absolute URL required</span></div><div class="request-controls"><label class="timeout-label">Timeout <select id="repeater-timeout"><option value="5">5s</option><option value="10" selected>10s</option><option value="20">20s</option><option value="30">30s</option></select></label><button id="repeater-send" class="button button-primary">Send request <span class="send-arrow">↗</span></button></div></div><textarea id="repeater-request" class="code-editor repeater-editor" spellcheck="false" aria-label="Raw HTTP request editor">GET http://127.0.0.1:5000/ HTTP/1.1
+Host: 127.0.0.1:5000
+User-Agent: WireScope-Repeater/0.2
+Accept: */*
+
+</textarea><div class="editor-foot"><span>HTTP/1.1 raw format</span><span id="repeater-request-size">0 bytes</span></div></div>
+          <div class="panel repeater-response-panel"><div class="panel-titlebar"><div><h2>Response</h2><span id="repeater-response-meta" class="subtle">Awaiting request</span></div><button id="copy-response" class="button button-secondary button-sm" disabled>Copy response</button></div><pre id="repeater-response" class="response-view"><span class="response-placeholder">Send a request to view its response.</span></pre></div>
+        </div>
+        <div class="notice-row"><span class="notice-icon">i</span><span>Loopback hosts are in scope by default unless an explicit exclusion rule matches; other hosts require an inclusion rule. TLS certificate verification remains enabled.</span><button data-view="settings" class="text-button">Manage scope →</button></div>
+      </section>
+
+      <section id="view-websockets" class="workspace-view">
+        <div class="page-heading"><div><div class="eyebrow">LIVE PROTOCOL INSPECTION</div><h1>WebSockets</h1><p>Inspect real WebSocket handshakes and messages captured by the local proxy. No connections are opened by this workspace unless you explicitly send a message on a selected live connection.</p></div><div class="heading-meta"><span class="meta-label">MESSAGE LIMIT</span><code id="ws-size-limit">Loading…</code></div></div>
+        <div class="panel tool-toolbar ws-toolbar">
+          <label class="search-field"><span>⌕</span><input id="ws-connection-search" type="search" placeholder="Search host, URL, connection ID…" autocomplete="off" aria-label="Search WebSocket connections"></label>
+          <select id="ws-connection-state" class="filter-select" aria-label="Filter connection state"><option value="">All states</option><option value="connecting">Connecting</option><option value="open">Open</option><option value="closed">Closed</option><option value="error">Error</option><option value="interrupted">Interrupted</option><option value="rejected">Rejected</option></select>
+          <button id="ws-refresh" class="button button-secondary button-sm">Refresh</button><span id="ws-connection-count" class="muted-note">0 connections</span>
+        </div>
+        <div class="ws-layout">
+          <section class="panel ws-connection-panel" aria-label="WebSocket connections"><div class="panel-titlebar"><div><h2>Connections</h2><span class="subtle">From captured proxy traffic</span></div><span id="ws-connection-page-label" class="count-label">Page 1</span></div><div id="ws-connection-rows" class="ws-connection-rows"><div class="empty-state compact"><strong>Loading connections…</strong></div></div><div class="ws-pagination"><button id="ws-connections-prev" class="button button-secondary button-sm" disabled>Previous</button><button id="ws-connections-next" class="button button-secondary button-sm" disabled>Next</button></div></section>
+          <section class="panel ws-message-panel" aria-label="WebSocket messages"><div class="panel-titlebar"><div><h2>Message timeline</h2><span id="ws-message-subtitle" class="subtle">Select a connection</span></div><span id="ws-message-count" class="count-label">0 messages</span></div><div class="ws-message-filters"><input id="ws-message-search" class="filter-input" type="search" placeholder="Search payload text…" aria-label="Search message payloads"><select id="ws-message-direction" class="filter-select" aria-label="Filter message direction"><option value="">Both directions</option><option value="client_to_server">Client → server</option><option value="server_to_client">Server → client</option></select><select id="ws-message-opcode" class="filter-select" aria-label="Filter message type"><option value="">Text + binary</option><option value="1">Text</option><option value="2">Binary</option></select></div><div id="ws-message-rows" class="ws-message-rows"><div class="empty-state compact"><strong>No connection selected</strong><span>Choose a captured connection to inspect its messages.</span></div></div><div class="ws-pagination"><button id="ws-messages-prev" class="button button-secondary button-sm" disabled>Previous</button><button id="ws-messages-next" class="button button-secondary button-sm" disabled>Next</button></div></section>
+          <section class="panel ws-inspector-panel" aria-label="WebSocket inspector"><div id="ws-inspector-empty" class="empty-state detail-empty"><div class="empty-icon">↔</div><strong>Select a connection or message</strong><span>Handshake metadata, payload bytes, close details, and manual sending appear here.</span></div><div id="ws-inspector" class="hidden"></div></section>
+        </div>
+      </section>
+
+      <section id="view-settings" class="workspace-view">
+        <div class="page-heading"><div><div class="eyebrow">APPLICATION CONFIGURATION</div><h1>Settings & scope</h1><p>Keep the listener private and explicitly define which targets are eligible for manual replay.</p></div></div>
+        <div class="settings-grid">
+          <div class="panel settings-card"><div class="settings-card-heading"><div class="settings-icon">⇄</div><div><h2>Local proxy</h2><p>The listener is restricted to loopback interfaces.</p></div></div><div class="setting-row"><div><strong>Bind address</strong><span>Cannot be exposed to your LAN</span></div><code>127.0.0.1</code></div><div class="setting-row"><div><strong>Listener port</strong><span>Applied the next time the proxy starts</span></div><div class="port-control"><input id="proxy-port" type="number" min="1" max="65535" value="8080"><button id="save-port" class="button button-secondary button-sm">Use port</button></div></div><div class="setting-row"><div><strong>HTTPS CA certificate</strong><span id="ca-path-text">Created after the first proxy start</span></div><button id="settings-ca-download" class="button button-secondary button-sm" disabled>Export PEM</button></div></div>
+          <div class="panel settings-card"><div class="settings-card-heading"><div class="settings-icon">◎</div><div><h2>Target scope</h2><p>Scope filters the Site Map and gates Repeater requests. Exclusions always win.</p></div></div><div class="scope-default"><span class="scope-check">✓</span><div><strong>Loopback lab targets</strong><span>localhost · 127.0.0.1 · ::1 are in scope by default; an explicit exclusion overrides this.</span></div><span class="built-in-tag">BUILT IN</span></div><form id="scope-form" class="scope-add-form"><label for="scope-pattern">Hostname pattern</label><div class="scope-add-line"><input id="scope-pattern" placeholder="e.g. test.example.com or *.lab.local" required maxlength="253"><select id="scope-mode" aria-label="Rule mode"><option value="include">Include</option><option value="exclude">Exclude</option></select><button class="button button-primary button-sm" type="submit">Add rule</button></div><small>Hostnames only, with optional * and ? wildcards. Scheme and path are not accepted.</small></form><div id="scope-rules" class="scope-rules"><div class="muted-note">Loading rules…</div></div></div>
+          <div class="panel settings-card privacy-card"><div class="settings-card-heading"><div class="settings-icon">◇</div><div><h2>Privacy & local storage</h2><p>Project information remains on this device.</p></div></div><div class="privacy-list"><div><span class="privacy-check">✓</span><span><strong>No telemetry</strong><small>Nothing is sent to WireScope or other external services.</small></span></div><div><span class="privacy-check">✓</span><span><strong>Local SQLite history</strong><small>Traffic is stored under your user data directory.</small></span></div><div><span class="privacy-check">✓</span><span><strong>Secrets stay local</strong><small>Request data is never written to application logs.</small></span></div></div><div class="settings-warning"><strong>Certificate warning</strong><span>Trust the CA only in a dedicated test browser/profile. Remove trust after testing if no longer needed. WireScope never installs it automatically.</span></div></div>
+          <div class="panel settings-card build-card"><div class="settings-card-heading"><div class="settings-icon">⌘</div><div><h2>Milestone 3</h2><p>Local traffic inspection workspaces</p></div></div><div class="implemented-list"><span><i>✓</i> HTTP/HTTPS proxy, history and Repeater</span><span><i>✓</i> Captured-traffic Site Map and scope filters</span><span><i>✓</i> Passive response Findings and review status</span><span><i>✓</i> URL, Base64, hex and HTML transformations</span><span><i>✓</i> Local HTTP/text Comparer</span><span><i>✓</i> Captured WebSocket frames and manual in-scope send</span></div><p class="muted-note build-note">Intruder, active scanning and third-party plugins remain deferred until implemented and tested. Live mitmproxy WebSocket integration still requires environment verification.</p></div>
+        </div>
+      </section>
+      <footer class="app-footer"><span>WireScope · open source · local-first</span><span id="footer-status">Ready</span></footer>
+    </main>
+  </div>
+  <div id="toast-region" class="toast-region" aria-live="polite"></div>
+  <script src="/static/app.js" defer></script>
+</body>
+</html>
