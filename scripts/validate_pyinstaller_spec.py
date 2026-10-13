@@ -14,15 +14,15 @@ from pyinstaller_datas import tree_toc_to_analysis_datas, validate_analysis_pair
 
 def main() -> None:
     mitm_datas, mitm_binaries, _ = collect_all("mitmproxy")
-static_root = ROOT / "src" / "wirescope" / "static"
-static_datas = [
-    (
-        str(path),
-        str(Path("wirescope/static") / path.relative_to(static_root).parent),
-    )
-    for path in sorted(static_root.rglob("*"))
-    if path.is_file()
-]
+    static_root = ROOT / "src" / "wirescope" / "static"
+    static_datas = [
+        (
+            str(path),
+            str(Path("wirescope/static") / path.relative_to(static_root).parent),
+        )
+        for path in sorted(static_root.rglob("*"))
+        if path.is_file()
+    ]
 
     data_pairs = validate_analysis_pairs("datas", list(mitm_datas) + static_datas)
     binary_pairs = validate_analysis_pairs("binaries", list(mitm_binaries))
